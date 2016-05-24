@@ -44,10 +44,14 @@ class MhConverter
      .gsub(/>/, '&gt;')
   end
 
+  def spooled?
+    @spooled_paragraph ? true : false
+  end
+
   def spooled
-    if @para
-      yield @para
-      @para = nil
+    if spooled?
+      yield @spooled_paragraph
+      @spooled_paragraph = nil
     end
   end
 
@@ -71,7 +75,7 @@ class MhConverter
   end
 
   def list
-    item if @para
+    item if spooled?
     return if @listctx.empty?
     last = @listctx.pop
     case last.type
@@ -84,9 +88,9 @@ class MhConverter
     end
   end
 
-  def flush(breaktype)
-    debug "flushing %s (%s)", breaktype, @para_mode
-    case breaktype
+  def flush(level)
+    debug "flushing %s (%s)", level, @para_mode
+    case level
     when :block
       case @para_mode
       when :pre
@@ -109,8 +113,8 @@ class MhConverter
 
   def spool(line)
     debug "(%s)%s", @para_mode, line
-    @para ||= ''
-    @para << line
+    @spooled_paragraph ||= ''
+    @spooled_paragraph << line
   end
 
   ListContext = Struct.new(:type, :content_indent, :opened)
@@ -140,32 +144,31 @@ class MhConverter
   def convert(input)
     set_para_mode :plain
     @blanks = 0
-    @para = nil
+    @spooled_paragraph = nil
     @listctx = []
 
     input.each_line do |line|
 
       # 空行の扱いは特別なので後段のcaseとは別に処理する。
       if /^\s*$/ =~ line
-        debug ""
+        debug "<empty>"
         @blanks += 1
-        case @para_mode
-        when :pre
+        if @para_mode == :pre
           spool "\n"      # preブロックは空行では終わらない
-        else
-          if @blanks == 1
-            flush :para
-          elsif @blanks == 2
-            flush :block
-            set_para_mode :plain
-          end
+        elsif @blanks == 2
+          # pre 以外なら空行が２連続で段落終了が確定する
+          flush :block
+          set_para_mode @listctx.empty? ? :plain : :list
         end
         next
       end
 
+      last_blanks = @blanks
+      @blanks = 0
+
       case line
       when /^==+\s*$/    # heading with underline
-        if @blanks > 0
+        if last_blanks > 0
           flush :block
           spool line
         else
@@ -173,7 +176,7 @@ class MhConverter
         end
 
       when /^--+\s*$/    # heading with underline or horizontal rule
-        if @para && @blanks == 0
+        if spooled? && last_blanks == 0
           heading 2
         else
           flush :block
@@ -199,7 +202,7 @@ class MhConverter
         set_para_mode :list
 
         listlv = get_list_level(bullet_indent)
-        debug "(%2d %4d) %4d- %d %s",
+        debug "(lc:%2d bi:%2d ci:%2d - lv:%d) %s",
               @listctx.size, current_base_indent, content_indent, listlv || -1, content
         case listlv
         when nil
@@ -214,7 +217,7 @@ class MhConverter
 
         else
           # リストをさかのぼる
-          (listlv .. @listctx.size - 1).each do
+          (@listctx.size - listlv - 1).times do
             flush :list
           end
         end
@@ -224,12 +227,17 @@ class MhConverter
         indent = $1.size
         content = $2
 
-        debug "(%2d %4d) %4d: %s", @listctx.size, current_base_indent, indent, content
+        debug "(lc:%2d bi:%4d ci:%4d : ) %s", @listctx.size, current_base_indent, indent, content
+
+        # 空行1つ挟む場合の処理
+        if last_blanks == 1
+          flush :para
+        end
 
         # 既存のリスト階層のどこに位置するか調べる
         listlv = get_list_level(indent)
         if listlv
-          (listlv .. @listctx.size - 1).each do
+          (@listctx.size - listlv - 1).times do
             flush :list
           end
         end
@@ -245,8 +253,8 @@ class MhConverter
           spool line
         end
       end
-      @blanks = 0
     end
+    debug "finishing"
     flush :block
   end
 
