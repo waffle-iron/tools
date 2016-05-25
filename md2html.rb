@@ -373,7 +373,10 @@ class MhConverter
     puts <<-EOS.gsub(/^    /, '')
     <?xml version="1.0" encoding="UTF-8"?>
     <!DOCTYPE html>
-    <html xmlns="http://www.w3.org/1999/xhtml">
+    <!--
+      Generated from '#{org_file}' by #{File.basename($0)} at #{Time.now}
+    -->
+    <html xmlns="http://www.w3.org/1999/xhtml" lang="ja" xml:lang="ja">
     <head>
       <style type="text/css">
         body { padding: 1em; }
