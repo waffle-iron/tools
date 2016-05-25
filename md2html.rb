@@ -7,6 +7,10 @@ class MhConverter
 
   HEADING_LEVEL_MAX = 6
 
+  attr_accessor :org_file
+
+  attr_accessor :debugging
+
   def initialize(output)
     @output = output
   end
@@ -300,10 +304,14 @@ class MhConverter
 
 end
 
-c = MhConverter.new(STDOUT)
-
-c.header
-c.convert ARGF
-c.footer
+if $0 == __FILE__
+  ARGF.set_encoding("UTF-8")
+  c = MhConverter.new(STDOUT)
+  c.org_file = ARGF.filename
+  c.debugging = true
+  c.header
+  c.convert ARGF
+  c.footer
+end
 
 # vim:set ts=2 sw=2 et:
