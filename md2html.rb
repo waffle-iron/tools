@@ -312,9 +312,11 @@ class MhConverter
         end
 
       when /^(( *)[-+\*] +)(.*)$/ # list
+        flush :block if last_blanks >= 2
         spool_list_item $2.size, $1.size, :ul, $3
 
       when /^(( *)\d+\. +)(.*)$/ # numbered list
+        flush :block if last_blanks >= 2
         spool_list_item $2.size, $1.size, :ol, $3
 
       when /^( *)(.*)$/   # always match
