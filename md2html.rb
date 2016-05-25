@@ -13,6 +13,13 @@ class MhConverter
 
   def initialize(output)
     @output = output
+    @suffix_map = {
+      ".md" => ".xhtml",
+    }
+  end
+
+  def debug(format, *vals)
+    STDERR.puts format % vals if @debugging
   end
 
   def puts(content)
@@ -20,7 +27,11 @@ class MhConverter
   end
 
   def tagputs(tag, content)
-    puts "<#{tag}>#{content}</#{tag}>"
+    puts indent_sp + "<#{tag}>#{content}</#{tag}>"
+  end
+
+  def indent_sp
+    "  " * current_context_level
   end
 
   def heading(level)
@@ -33,13 +44,17 @@ class MhConverter
     puts "<hr/>"
   end
 
-  def para
+  def flush_paragraph
     spooled do |content|
-      tagputs "p", content
+      if current_context.paragraphed
+        tagputs "p", content
+      else
+        puts content
+      end
     end
   end
 
-  def pre
+  def flush_pre
     spooled do |content|
       tagputs "pre", content
     end
@@ -54,10 +69,14 @@ class MhConverter
     @spooled_paragraph ? true : false
   end
 
+  def clear_spool
+      @spooled_paragraph = nil
+  end
+
   def spooled
     if spooled?
       yield @spooled_paragraph
-      @spooled_paragraph = nil
+      clear_spool
     end
   end
 
@@ -66,31 +85,73 @@ class MhConverter
     @para_mode = mode
   end
 
-  def item
-    spooled do |content|
-      unless @listctx.last.opened
-        tag = case @listctx.last.type
-              when :ul; "<ul>"
-              when :ol; "<ol>"
-              end
-        puts "  " * (@listctx.size * 2) + tag
-        @listctx.last.opened = true
-      end
-      puts "  " * (@listctx.size * 2 + 1) + "<li>#{content}</li>"
+  def current_context
+    @contexts.last
+  end
+
+  def open_list
+    tag = case current_context.type
+          when :ul; "<ul>"
+          when :ol; "<ol>"
+          end
+    puts indent_sp + tag
+    current_context.status = :inlist
+  end
+
+  def open_item
+    puts indent_sp + " <li>"
+    current_context.status = :initem
+  end
+
+  def flush_current
+    case @para_mode
+    when :pre
+      flush_pre
+    when :plain
+      flush_paragraph
+    when :blockquote
+    else
+      STDERR.puts "Illegal paragraph mode: #@para_mode"
     end
   end
 
-  def list
-    item if spooled?
-    return if @listctx.empty?
-    last = @listctx.pop
+  def flush_item
+    if spooled?
+      spooled do |content|
+        debug "item : #{content}"
+        case current_context.status
+        when :outside
+          open_list
+          open_item
+          flush_current
+        when :inlist
+          open_item
+          flush_current
+        when :initem
+          flush_current
+        end
+        puts indent_sp + " </li>"
+      end
+    else
+      if current_context.status == :initem
+        puts indent_sp + " </li>"
+      end
+    end
+    current_context.status = :inlist
+  end
+
+  def flush_list
+    flush_item
+    return if current_context.type == :body
+    debug "pop list"
+    last = @contexts.pop
     case last.type
     when :ul
       puts "</ul>"
     when :ol
       puts "</ol>"
     else
-      STDERR.puts "Illegal list context: #{ctx}"
+      STDERR.puts "Illegal context: #{ctx}"
     end
   end
 
@@ -98,92 +159,143 @@ class MhConverter
     debug "flushing %s (%s)", level, @para_mode
     case level
     when :block
-      case @para_mode
-      when :pre
-        pre
-      when :list
-        list until @listctx.empty?
-      when :plain
-        para
-      else
-        STDERR.puts "Illegal paragraph mode: #@para_mode"
-      end
+      flush_current
+      flush_list until current_context.type == :body
     when :para
-      para
+      open_list if current_context.status == :outside
+      open_item if current_context.status == :inlist
+      current_context.paragraphed = true
+      flush_paragraph
     when :item
-      item
+      flush_item
     when :list
-      list
+      flush_list unless current_context.type == :body
     end
+    set_para_mode :plain
+  end
+
+  def convert_inline(line)
+    escape(line).gsub(/`(.*)`/) {
+      "<code>#$1</code>"
+    }.gsub(/!\[([^\]]*)\]\(([^\)]*)\)/) {
+      text = $1
+      path = $2
+      %{<img src="#{path}" alt="#{text}" />}
+    }.gsub(/\[([^\]]*)\]\(([^\)]*)\)/) {
+      text = $1
+      path = $2
+      @suffix_map.each do |from, to|
+        path.gsub!(/#{from}$/, to)
+      end
+      %{<a href="#{path}">#{text}</a>}
+    }
   end
 
   def spool(line)
-    debug "(%s)%s", @para_mode, line
+    debug "SPOOL(%s) %s", @para_mode, line
     @spooled_paragraph ||= ''
-    @spooled_paragraph << line
+    @spooled_paragraph << convert_inline(line)
   end
 
-  ListContext = Struct.new(:type, :content_indent, :opened)
+  # 処理コンテキスト
+  # type = :body, :ul, :ol
+  # status = nil, :outside, :inlist, :initem
+  Context = Struct.new(:type, :indent, :status, :paragraphed)
 
-  # 既存のリスト階層のどこに位置するか調べる
-  def get_list_level(indent)
-    @listctx.each.with_index do |ctx, i|
-      if indent < ctx.content_indent
-        return i
+  def current_context_level
+    @contexts.size - 1
+  end
+
+  # インデント位置がどのレベルか調べる
+  def get_context_level(indent)
+    level = -1
+    @contexts.each do |ctx|
+      break if indent < ctx.indent
+      level += 1
+    end
+    level
+  end
+
+  # リストのbulletの位置がどのレベルか調べる
+  def bullet_context_level(bullet_indent)
+    level = get_context_level(bullet_indent)
+    if level == current_context_level
+      nil
+    else
+      level + 1
+    end
+  end
+
+  def spool_list_item(bullet_indent, content_indent, list_type, content)
+    flush :block if current_context.type == :body
+
+    level = bullet_context_level(bullet_indent)
+    debug "(lc:%2d bi:%2d ci:%2d - lv:%d) %s",
+          current_context_level, current_context.indent, content_indent, level || -1, content
+
+    case level
+    when nil
+      # 新しい階層
+      flush :item unless current_context.type == :body
+      @contexts << Context.new(list_type, content_indent, :outside, false)
+
+    when current_context_level
+      # 同一階層
+      if current_context.type == list_type
+        flush :item
+        current_context.indent = content_indent
+      else
+        flush :list
+        @contexts << Context.new(list_type, content_indent, :outside, false)
+      end
+
+    else
+      # リストをさかのぼる
+      (current_context_level - level).times do
+        flush :list
       end
     end
-    nil
+    spool content
   end
 
-  def current_base_indent
-    if @listctx.empty?
-      0
-    else
-      @listctx.last.content_indent
+  def expand_tabs(s)
+    # 行頭のタブ文字だけは空白4文字扱いする
+    if /^(\t+)(.*)$/ =~ s
+      s = "    " * $1.size + $2
     end
-  end
-
-  def debug(format, *vals)
-    STDERR.puts format % vals
+    s
   end
 
   def convert(input)
+    clear_spool
     set_para_mode :plain
-    @blanks = 0
-    @spooled_paragraph = nil
-    @listctx = []
+    blanks = 0
+    @contexts = [Context.new(:body, 0, nil, true)]
 
     input.each_line do |line|
 
-      # 空行の扱いは特別なので後段のcaseとは別に処理する。
+      line = expand_tabs(line)
+
       if /^\s*$/ =~ line
         debug "<empty>"
-        @blanks += 1
-        if @para_mode == :pre
-          spool "\n"      # preブロックは空行では終わらない
-        elsif @blanks == 2
-          # pre 以外なら空行が２連続で段落終了が確定する
-          flush :block
-          set_para_mode @listctx.empty? ? :plain : :list
-        end
+        blanks += 1
         next
       end
-
-      last_blanks = @blanks
-      @blanks = 0
+      last_blanks = blanks
+      blanks = 0
 
       case line
       when /^==+\s*$/    # heading with underline
         if last_blanks > 0
           flush :block
           spool line
-        else
+        else             #リスト内の考慮が必要
           heading 1
         end
 
       when /^--+\s*$/    # heading with underline or horizontal rule
         if spooled? && last_blanks == 0
-          heading 2
+          heading 2             #リスト内の考慮が必要
         else
           flush :block
           hr
@@ -200,62 +312,55 @@ class MhConverter
         end
 
       when /^(( *)[-+\*] +)(.*)$/ # list
-        content_indent = $1.size
-        bullet_indent = $2.size
-        content = $3
+        spool_list_item $2.size, $1.size, :ul, $3
 
-        flush :block if @listctx.empty?
-        set_para_mode :list
-
-        listlv = get_list_level(bullet_indent)
-        debug "(lc:%2d bi:%2d ci:%2d - lv:%d) %s",
-              @listctx.size, current_base_indent, content_indent, listlv || -1, content
-        case listlv
-        when nil
-          # 新しい階層
-          flush :item unless @listctx.empty?
-          @listctx << ListContext.new(:ul, content_indent, false)
-
-        when @listctx.size - 1
-          # 同一階層
-          flush :item
-          @listctx.last.content_indent = content_indent
-
-        else
-          # リストをさかのぼる
-          (@listctx.size - listlv - 1).times do
-            flush :list
-          end
-        end
-        spool content
+      when /^(( *)\d+\. +)(.*)$/ # numbered list
+        spool_list_item $2.size, $1.size, :ol, $3
 
       when /^( *)(.*)$/   # always match
         indent = $1.size
         content = $2
 
-        debug "(lc:%2d bi:%4d ci:%4d : ) %s", @listctx.size, current_base_indent, indent, content
+        debug "(lc:%2d bi:%2d ci:%2d : ) %s",
+              current_context_level, current_context.indent, indent, content
+
+        # 既存のリスト階層のどこに位置するか調べる
+        level = get_context_level(indent)
+
+        leveldiff = current_context_level - level
+
+        # 字下げレベルが下がっていればその分リストを閉じる。
+        leveldiff.times do
+          flush :list
+        end
 
         # 空行1つ挟む場合の処理
-        if last_blanks == 1
+        if leveldiff == 0 && last_blanks == 1 && @para_mode != :pre
+          current_context.paragraphed = true
           flush :para
         end
 
-        # 既存のリスト階層のどこに位置するか調べる
-        listlv = get_list_level(indent)
-        if listlv
-          (@listctx.size - listlv - 1).times do
-            flush :list
-          end
-        end
+        offset = indent - current_context.indent
+        debug "(off:%2d lv:%2d)", offset, level
 
-        offset = indent - current_base_indent
         if offset >= PRE_INDENT
-          flush :block if :pre != @para_mode
+          # pre
+          flush :para if @para_mode != :pre
+
+          # 空行のあとに pre ブロックが続く場合
+          spool "\n" * last_blanks if last_blanks > 0 && @para_mode == :pre
+
           set_para_mode :pre
-          spool escape(" " * (offset - PRE_INDENT) + content) + "\n"
+
+          spool " " * (offset - PRE_INDENT) + content + "\n"
         else
-          flush :block if :plain != @para_mode
-          set_para_mode :plain
+          if last_blanks > 0
+            flush :block
+          end
+          if @para_mode == :pre
+            flush :block 
+            set_para_mode :plain
+          end
           spool line
         end
       end
