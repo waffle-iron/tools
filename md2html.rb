@@ -60,6 +60,18 @@ class MhConverter
     end
   end
 
+  def flush_current
+    case @para_mode
+    when :pre
+      flush_pre
+    when :plain
+      flush_paragraph
+    when :blockquote
+    else
+      STDERR.puts "Illegal paragraph mode: #@para_mode"
+    end
+  end
+
   def escape(s)
     s.gsub(/</, '&lt;')
      .gsub(/>/, '&gt;')
@@ -101,18 +113,6 @@ class MhConverter
   def open_item
     puts indent_sp + " <li>"
     current_context.status = :initem
-  end
-
-  def flush_current
-    case @para_mode
-    when :pre
-      flush_pre
-    when :plain
-      flush_paragraph
-    when :blockquote
-    else
-      STDERR.puts "Illegal paragraph mode: #@para_mode"
-    end
   end
 
   def flush_item
@@ -159,13 +159,14 @@ class MhConverter
     debug "flushing %s (%s)", level, @para_mode
     case level
     when :block
+      open_list if current_context.status == :outside
+      open_item if current_context.status == :inlist
       flush_current
       flush_list until current_context.type == :body
     when :para
       open_list if current_context.status == :outside
       open_item if current_context.status == :inlist
-      current_context.paragraphed = true
-      flush_paragraph
+      flush_current
     when :item
       flush_item
     when :list
@@ -226,35 +227,40 @@ class MhConverter
     end
   end
 
+  def push_context(type, indent)
+    debug "LIST <<(%s indent:%2d)", type, indent
+    @contexts << Context.new(type, indent, :outside, false)
+  end
+
   def spool_list_item(bullet_indent, content_indent, list_type, content)
     flush :block if current_context.type == :body
 
     level = bullet_context_level(bullet_indent)
-    debug "(lc:%2d bi:%2d ci:%2d - lv:%d) %s",
-          current_context_level, current_context.indent, content_indent, level || -1, content
+    debug "(lv:%2d [%s] ci:%2d - lv:%d) %s",
+          current_context_level, current_context, content_indent, level || 99, content
 
     case level
     when nil
       # 新しい階層
       flush :item unless current_context.type == :body
-      @contexts << Context.new(list_type, content_indent, :outside, false)
-
+      push_context list_type, content_indent
     when current_context_level
-      # 同一階層
-      if current_context.type == list_type
-        flush :item
-        current_context.indent = content_indent
-      else
-        flush :list
-        @contexts << Context.new(list_type, content_indent, :outside, false)
-      end
-
+      flush :item
     else
       # リストをさかのぼる
       (current_context_level - level).times do
         flush :list
       end
     end
+
+    # 同一階層
+    if current_context.type == list_type
+      current_context.indent = content_indent
+    else
+      flush :list
+      push_context list_type, content_indent
+    end
+
     spool content
   end
 
@@ -357,10 +363,10 @@ class MhConverter
           spool " " * (offset - PRE_INDENT) + content + "\n"
         else
           if last_blanks > 0
-            flush :block
+            flush :para
           end
           if @para_mode == :pre
-            flush :block 
+            flush :para
             set_para_mode :plain
           end
           spool line
