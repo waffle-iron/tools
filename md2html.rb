@@ -381,22 +381,33 @@ class MhConverter
       <style type="text/css">
         body { padding: 1em; }
         h1, h2, h3, h4, h5, h6 { font-weight: normal; }
-        h1 { margin: 1.5em 0em; }
-        h2 { border-bottom: 1px solid gray; }
+        h1 { margin: 1.5em 30px; }
+        h2 {
+          margin: 1.5em 30px 0;
+          border-bottom: 1px solid gray;
+        }
         h3, h4, h5, h6 { margin-left: 30px; }
         h3 {
-             border-left: 15px solid gray;
-             padding-left: 5px;
+           border-left: 10px solid gray;
+           padding-left: 5px;
         }
-        pre {
+        h4, h5 { font-weight: bold; }
+        pre, code {
           font-family: "Consolas", "Lucida Console", monospace;
           font-size: 0.9em;
-          margin-left: 40px;
-          padding: 0.5em;
           background-color: #F0F0F0;
         }
+        pre {
+          padding: 0.5em;
+          overflow: auto;
+          margin-left: 10px;
+        }
         body > p { margin-left: 30px; }
+        body > pre { margin-left: 40px; }
         p { margin-left: 10px; }
+        ul, ol { margin-left: 10px; margin-bottom: 0.6em; }
+        a { text-decoration: none; }
+        a:hover { text-decoration: underline; }
       </style>
     </head>
     <body>
