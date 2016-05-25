@@ -5,6 +5,8 @@ class MhConverter
 
   PRE_INDENT = 4
 
+  HEADING_LEVEL_MAX = 6
+
   def initialize(output)
     @output = output
   end
@@ -186,7 +188,7 @@ class MhConverter
       when /^(#+)\s*(.*)/ # heading with # prefix
         flush :block
         level = $1.size
-        if level <= 6
+        if level <= HEADING_LEVEL_MAX
           spool $2.chomp
           heading level
         else
