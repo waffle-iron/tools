@@ -383,17 +383,23 @@ class MhConverter
       <style type="text/css">
         body { padding: 1em; }
         h1, h2, h3, h4, h5, h6 { font-weight: normal; }
-        h1 { margin: 1.5em 30px; }
+        h1 {
+          font-size: 250%;
+          margin: 1.5em 30px; }
         h2 {
+          font-size: 200%;
           margin: 1.5em 30px 0;
           border-bottom: 1px solid gray;
         }
         h3, h4, h5, h6 { margin-left: 30px; }
         h3 {
-           border-left: 10px solid gray;
-           padding-left: 5px;
+          font-size: 160%;
+          border-left: 10px solid gray;
+          padding-left: 5px;
         }
-        h4, h5 { font-weight: bold; }
+        h4 { font-size: 140%; font-weight: bold; }
+        h5 { font-size: 120%; font-weight: bold; }
+        h6 { font-size: 100%; font-style: italic;}
         pre, code {
           font-family: "Consolas", "Lucida Console", monospace;
           font-size: 0.9em;
