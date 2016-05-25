@@ -143,8 +143,8 @@ class MhConverter
   def flush_list
     flush_item
     return if current_context.type == :body
-    debug "pop list"
     last = @contexts.pop
+    debug "LIST >>(%s)", last.type
     case last.type
     when :ul
       puts "</ul>"
@@ -201,7 +201,20 @@ class MhConverter
   # 処理コンテキスト
   # type = :body, :ul, :ol
   # status = nil, :outside, :inlist, :initem
-  Context = Struct.new(:type, :indent, :status, :paragraphed)
+  class Context
+    attr_accessor :type, :indent, :status, :paragraphed
+
+    def initialize(type, indent, status, paragraphed)
+      @type        = type
+      @indent      = indent
+      @status      = status
+      @paragraphed = paragraphed
+    end
+
+    def to_s
+      "%d %s (st:%s pa:%s)" % [@indent, @type, @status, @paragraphed]
+    end
+  end
 
   def current_context_level
     @contexts.size - 1
@@ -283,7 +296,6 @@ class MhConverter
       line = expand_tabs(line)
 
       if /^\s*$/ =~ line
-        debug "<empty>"
         blanks += 1
         next
       end
