@@ -427,6 +427,8 @@ class MhConverter
           padding: 0.5em;
           overflow: auto;
           margin-left: 10px;
+          border: 1px solid darkgray;
+          border-radius: 6px;
         }
         body > p { margin-left: 30px; }
         body > pre { margin-left: 40px; }
