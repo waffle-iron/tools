@@ -175,21 +175,34 @@ class MhConverter
     set_para_mode :plain
   end
 
+  SCHEMES_REGEX = "http|https|ftp|mailto|file"
+
+  # [caption](url)形式のリンクを処理したあと、裸のURLのリンク処理に
+  # 引っかからないようにするために : を置き換えておく代替文字
+  # 入力はHTML(XML)エスケープ済み文字列のはずなのでこの文字はありえない
+  COLON_REPL = "<>"
+
   def convert_inline(line)
     line.gsub(/`(.*)`/) {
+      # `code`
       "<code>#$1</code>"
     }.gsub(/!\[([^\]]*)\]\(([^\)]*)\)/) {
+      # ![img](url)
       text = $1
-      path = $2
-      %{<img src="#{path}" alt="#{text}" />}
+      url = $2.gsub(":", COLON_REPL)
+      %{<img src="#{url}" alt="#{text}" />}
     }.gsub(/\[([^\]]*)\]\(([^\)]*)\)/) {
+      # [link](url)
       text = $1
-      path = $2
+      url = $2.gsub(":", COLON_REPL)
       @suffix_map.each do |from, to|
-        path.gsub!(/#{from}$/, to)
+        url.gsub!(/#{from}$/, to)
       end
-      %{<a href="#{path}">#{text}</a>}
-    }
+      %{<a href="#{url}">#{text}</a>}
+    }.gsub(/\b(#{SCHEMES_REGEX}):\S+/) { |url|
+      # bare url
+      %{<a href="#{url}">#{url}</a>}
+    }.gsub(COLON_REPL, ":")
   end
 
   def spool(line)
