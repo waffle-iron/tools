@@ -451,7 +451,7 @@ class MhConverter
         body > p { margin-left: 30px; }
         body > pre { margin-left: 40px; }
         p { margin-left: 10px; }
-        ul, ol { margin-left: 10px; margin-bottom: 0.6em; }
+        ul, ol { margin-left: 15px; margin-bottom: 0.6em; }
         a { text-decoration: none; }
         a:hover { text-decoration: underline; }
       </style>
