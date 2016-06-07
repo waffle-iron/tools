@@ -199,6 +199,9 @@ class MhConverter
         url.gsub!(/#{from}$/, to)
       end
       %{<a href="#{url}">#{text}</a>}
+    }.sub(/  +$/) {
+      # force break line
+      "<br/>\n"
     }.gsub(/\b(#{SCHEMES_REGEX}):\S+/) { |url|
       # bare url
       %{<a href="#{url}">#{url}</a>}
