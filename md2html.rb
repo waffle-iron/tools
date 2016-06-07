@@ -176,7 +176,7 @@ class MhConverter
   end
 
   def convert_inline(line)
-    escape(line).gsub(/`(.*)`/) {
+    line.gsub(/`(.*)`/) {
       "<code>#$1</code>"
     }.gsub(/!\[([^\]]*)\]\(([^\)]*)\)/) {
       text = $1
@@ -195,7 +195,9 @@ class MhConverter
   def spool(line)
     debug "SPOOL(%s) %s", @para_mode, line
     @spooled_paragraph ||= ''
-    @spooled_paragraph << convert_inline(line)
+    line = escape(line)
+    line = convert_inline(line) if @para_mode != :pre
+    @spooled_paragraph << line
   end
 
   # 処理コンテキスト
