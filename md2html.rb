@@ -184,7 +184,7 @@ class MhConverter
   COLON_REPL = "<>"
 
   def convert_inline(line)
-    line.gsub(/`(.*)`/) {
+    line.gsub(/`([^`]*)`/) {
       # `code`
       "<code>#$1</code>"
     }.gsub(/!\[([^\]]*)\]\(([^\)]*)\)/) {
