@@ -73,7 +73,8 @@ class MhConverter
   end
 
   def escape(s)
-    s.gsub(/</, '&lt;')
+    s.gsub(/&/, '&amp;')
+     .gsub(/</, '&lt;')
      .gsub(/>/, '&gt;')
   end
 
