@@ -187,6 +187,14 @@ class MhConverter
     line.gsub(/`([^`]*)`/) {
       # `code`
       "<code>#$1</code>"
+    }.gsub(/\*\*([^*]*)\*\*/) {
+      "<strong>#$1</strong>"
+    }.gsub(/__([^_]*)__/) {
+      "<strong>#$1</strong>"
+    }.gsub(/\*([^*]*)\*/) {
+      "<em>#$1</em>"
+    }.gsub(/_([^_]*)_/)/) {
+      "<em>#$1</em>"
     }.gsub(/!\[([^\]]*)\]\(([^\)]*)\)/) {
       # ![img](url)
       text = $1
