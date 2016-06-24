@@ -73,7 +73,8 @@ class MhConverter
   end
 
   def escape(s)
-    s.gsub(/</, '&lt;')
+    s.gsub(/&/, '&amp;')
+     .gsub(/</, '&lt;')
      .gsub(/>/, '&gt;')
   end
 
@@ -183,9 +184,17 @@ class MhConverter
   COLON_REPL = "<>"
 
   def convert_inline(line)
-    line.gsub(/`(.*)`/) {
+    line.gsub(/`([^`]*)`/) {
       # `code`
       "<code>#$1</code>"
+    }.gsub(/\*\*([^*]*)\*\*/) {
+      "<strong>#$1</strong>"
+    }.gsub(/__([^_]*)__/) {
+      "<strong>#$1</strong>"
+    }.gsub(/\*([^*]*)\*/) {
+      "<em>#$1</em>"
+    }.gsub(/_([^_]*)_/) {
+      "<em>#$1</em>"
     }.gsub(/!\[([^\]]*)\]\(([^\)]*)\)/) {
       # ![img](url)
       text = $1
