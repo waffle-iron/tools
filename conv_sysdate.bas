@@ -31,7 +31,7 @@ Function SysdateExpressionToPg(OrgExp As String)
         
         ' PostgreSQL用の新しい数式を組み立てる。
         Dim PgExpPart As String
-        PgExpPart = "current_timestamp - interval '" & Days & " days'"
+        PgExpPart = "current_timestamp - interval '" & Days & " day'"
         
         ' sysdateを使った部分式を、新しい数式に置き換える。
         Exp = RegExp("sysdate\s*-\s*" & Days).Replace(Exp, PgExpPart)
@@ -54,16 +54,24 @@ Sub ConvertAllSysdate()
     Set Found = Sheet.Cells.Find(What:="sysdate", After:=ActiveCell, LookIn:=xlFormulas, _
         LookAt:=xlPart, SearchOrder:=xlByRows, SearchDirection:=xlNext, _
         MatchCase:=False, MatchByte:=False, SearchFormat:=False)
-    If Not Found Is Nothing Then
+    If Not Nothing Is Found Then
         Dim FirstAddress As String
         FirstAddress = Found.Address
+        Dim Count As Long
+        Count = 0
         Do
-            Found.Formula = SysdateToPg(Found.Formula)
+            Count = Count + 1
+            Dim Old As String
+            Old = Found.Formula
+            Found.Formula = SysdateToPg(Old)
+            Debug.Print Found.Address & " : " & Old & " -> " & Found.Formula
             Set Found = Sheet.Cells.FindNext(Found)
-            If Found Is Nothing Then
+            Set Found = Sheet.Cells.FindNext(Found)
+            If Nothing Is Found Then
                 Exit Do
             End If
         Loop While Found.Address <> FirstAddress
+        MsgBox Count & " cells done."
    End If
 End Sub
 
