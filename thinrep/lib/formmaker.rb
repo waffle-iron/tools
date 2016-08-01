@@ -37,8 +37,9 @@ class FormMaker < Sinatra::Base
       item(:qrimage).src = qrimg_file
     end
 
-      report.generate filename: pdfpath 
-      FileUtils.rm qrimg_file
+    report.generate filename: pdfpath 
+    FileUtils.rm qrimg_file
+    pdfpath
   end
 
   def today
