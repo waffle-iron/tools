@@ -20,7 +20,7 @@ class FormMaker < Sinatra::Base
   end
 
   def cache_base(vars)
-    "cache" + get_hash(vars)
+    "cache/" + get_hash(vars)
   end
 
   def make_pdf(vars)
