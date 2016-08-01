@@ -19,15 +19,17 @@ class FormMaker < Sinatra::Base
     Digest::SHA1.hexdigest(vars.to_s)
   end
 
+  def cache_base(vars)
+    "cache" + get_hash(vars)
+  end
+
   def make_pdf(vars)
-    pdfpath = get_hash(vars) + ".pdf"
-    return pdfpath if File.exist?(pdfpath)
+    pdfpath = cache_base(vars) + ".pdf"
+    #return pdfpath if File.exist?(pdfpath)
     # Make QR image
-    qrimg_file = get_hash(vars) + '-qr.png'
+    qrimg_file = cache_base(vars) + '-qr.png'
     qr = RQRCode::QRCode.new(vars[:qrtext], size: 3, level: :h)
-    png = qr.to_img
-    png.resize 200, 200
-    png.save qrimg_file
+    qr.to_img.resize(200, 200).save(qrimg_file)
 
     report = Thinreports::Report.new(layout: APPLICATION_FORM_PATH)
     report.start_new_page do
@@ -38,7 +40,7 @@ class FormMaker < Sinatra::Base
     end
 
     report.generate filename: pdfpath 
-    FileUtils.rm qrimg_file
+#    FileUtils.rm qrimg_file
     pdfpath
   end
 
