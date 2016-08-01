@@ -31,9 +31,9 @@ class FormMaker < Sinatra::Base
 
     report = Thinreports::Report.new(layout: APPLICATION_FORM_PATH)
     report.start_new_page do
-      item(:date).value = vars[:date]
-      item(:name).value = vars[:name]
-      #  item(:thinreports).value('Thinreports')
+      %i(date name address email).each do |k|
+        item(k).value = vars[k]
+      end
       item(:qrimage).src = qrimg_file
     end
 
@@ -52,7 +52,9 @@ class FormMaker < Sinatra::Base
     vars = {
         date: today,
         name: params[:name],
-        qrtext: "hoge@example.com",
+        address: params[:address],
+        email: params[:email],
+        qrtext: params[:email],
     }
 
     pdffile = make_pdf(vars)
