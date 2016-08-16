@@ -119,7 +119,7 @@ class MhConverter
   def flush_item
     if spooled?
       spooled do |content|
-        debug "item : #{content}"
+        debug "item : %s", content
         case current_context.status
         when :outside
           open_list
