@@ -26,6 +26,10 @@ class MhConverter
     @output.puts content
   end
 
+  def print(content)
+    @output.print content
+  end
+
   def tagputs(tag, content)
     puts indent_sp + "<#{tag}>#{content}</#{tag}>"
   end
@@ -49,7 +53,7 @@ class MhConverter
       if current_context.paragraphed
         tagputs "p", content
       else
-        puts content
+        print content
       end
     end
   end
@@ -88,7 +92,7 @@ class MhConverter
 
   def spooled
     if spooled?
-      yield @spooled_paragraph
+      yield @spooled_paragraph.chomp
       clear_spool
     end
   end
@@ -112,7 +116,7 @@ class MhConverter
   end
 
   def open_item
-    puts indent_sp + " <li>"
+    print indent_sp + " <li>"
     current_context.status = :initem
   end
 
@@ -131,7 +135,7 @@ class MhConverter
         when :initem
           flush_current
         end
-        puts indent_sp + " </li>"
+        puts "</li>"
       end
     else
       if current_context.status == :initem
@@ -183,6 +187,7 @@ class MhConverter
   # 入力はHTML(XML)エスケープ済み文字列のはずなのでこの文字はありえない
   COLON_REPL = "<>"
 
+  # process inline markups and HTML escape
   def convert_inline(line)
     line.gsub(/`([^`]*)`/) {
       # `code`
