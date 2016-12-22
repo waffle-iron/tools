@@ -438,6 +438,7 @@ class MhConverter
     -->
     <html xmlns="http://www.w3.org/1999/xhtml" lang="ja" xml:lang="ja">
     <head>
+      <meta charset="UTF-8">
       <style type="text/css">
         body { padding: 1em; }
         h1, h2, h3, h4, h5, h6 { font-weight: normal; }
