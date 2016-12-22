@@ -7,6 +7,9 @@ class MhConverter
 
   HEADING_LEVEL_MAX = 6
 
+  # 特定の行をソースから取り除くフィルター
+  FILTER_REGEX = /^\s*\{\{\s*>?\s*toc\s*\}\}\s*$/
+
   attr_accessor :org_file
 
   attr_accessor :debugging
@@ -333,6 +336,11 @@ class MhConverter
       end
       last_blanks = blanks
       blanks = 0
+
+      case line
+      when FILTER_REGEX
+        next
+      end
 
       case line
       when /^==+\s*$/    # heading with underline
