@@ -12,6 +12,7 @@ class ClockApp
       :fg => "black",
       :refresh => 1000,
       :format => "%Y-%m-%d(%a) %H:%M:%S",
+      :top     => false,
   }
 
   def initialize(conf = nil)
