@@ -11,6 +11,7 @@
 #     - task2 (1.25h)
 #        :
 
+require 'optparse'
 require 'yaml'
 require 'time'
 
@@ -23,20 +24,24 @@ ROUND_UNIT = nil # 15 * 60 # 丸め単位 nil だと丸めない
 
 module ReportData
 
-  def to_csv
-    output = ""
+  def fill_all_tasks_hours
     each do |date, vals|
       if vals
-        stime = etime = ""
-        stime, etime = vals["timecard"].split(/-/) if vals["timecard"]
-        hours = calc_hours(stime, etime)
+        stime, etime, hours, tasks = parse_day(vals)
+        fill_task_hours tasks, hours
+      end
+    end
+    self
+  end
+
+  def to_csv(opts)
+    output = ""
+    each do |date, vals|
+      STDERR.puts date if opts[:verbose]
+      if vals
+        stime, etime, hours, tasks = parse_day(vals)
         tasks_str = ""
-        tasks = vals["tasks"]
-        if tasks
-          fill_task_hours tasks, hours
-          tasks_str = tasks.map{|s| "・#{s}"}.join("\n") 
-        end
-        
+        tasks_str = tasks.map{|s| "・#{s}"}.join("\n") if tasks
         csv_vals = [date, hour_to_s(hours), tasks_str] + [""] * 7 + [stime, etime]
       else
         csv_vals = [date, 0.0, "休日"]
@@ -59,11 +64,19 @@ module ReportData
   end
 
   module_function
-  def from_yaml_file(filename)
+  def load_yaml_file(filename)
     YAML.load_file(filename).extend(ReportData)
   end
 
   private
+
+  def parse_day(vals)
+    stime = etime = ""
+    stime, etime = vals["timecard"].split(/-/) if vals["timecard"]
+    hours = calc_hours(stime, etime)
+    tasks = vals["tasks"]
+    return stime, etime, hours, tasks
+  end
 
   def hour_to_s(hour)
     hour.nil? ? '' : '%4.2f' % [hour]
@@ -75,13 +88,11 @@ module ReportData
     tasks.each.with_index do |t, i|
       if /\(([\d.]+)h\)$/ =~ t
         assigned += $1.to_f
+      elsif idx.nil?
+        idx = i
       else
-        if idx
-          STDERR.puts "Multiple tasks without hours detected: #{idx}, #{i}"
-          return
-        else
-          idx = i
-        end
+        STDERR.puts "Multiple tasks without hours detected: #{idx}, #{i}"
+        return
       end
     end
     if idx && hours
@@ -109,9 +120,17 @@ Encoding.default_external = Encoding::UTF_8
 yamlfile = YAML_FILE
 csvfile = CSV_FILE
 
-data = ReportData.from_yaml_file(yamlfile)
+opts = {}
+OptionParser.new do |op|
+  op.on('-v', 'verbose mode') {opts[:verbose] = true}
+  op.parse! ARGV
+end
+
+data = ReportData.load_yaml_file(yamlfile)
 File.open(csvfile, "w") do |out|
-  out.print data.extract_by_month(Time.now.month).to_csv.encode(Encoding::CP932)
+  out.print data.extract_by_month(Time.now.month)
+              .fill_all_tasks_hours.to_csv(opts)
+              .encode(Encoding::CP932)
 end
 
 # vim:set ft=ruby ts=2 sw=2 et:
