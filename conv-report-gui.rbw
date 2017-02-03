@@ -5,8 +5,6 @@ require_relative 'conv-report'
 
 Encoding.default_external = Encoding::UTF_8
 
-#Tk::Tile.set_theme :xpnative
-
 class ConverterGui
 
   def clear
@@ -16,6 +14,9 @@ class ConverterGui
 
   def convert(yamlfile, month = nil)
     clear
+    now = Time.now
+    # 昨日と今日の作業詳細はデフォルトで開いておく
+    openkeys = [now.day - 1, now.day].map{|d| "#{now.month}/#{d}"}
     data = ReportData.load_yaml_file(yamlfile)
     data.extract_by_month(month || Time.now.month)
                   .fill_all_tasks_hours.table_each do |vals|
@@ -25,7 +26,7 @@ class ConverterGui
         if i == 0
           @tree.insert nil, :end, id: key, text: key,
                        value: [hours, stime, etime]
-          @tree.itemconfigure(key, :open, true) if key == "#{Time.now.month}/#{Time.now.day}"
+          @tree.itemconfigure(key, :open, true) if openkeys.include?(key)
         end
         @tree.insert key, :end, id: "#{key}-#{i}", text: '',
                      value: [task, '', '']
