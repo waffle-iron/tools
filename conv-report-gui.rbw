@@ -9,7 +9,13 @@ Encoding.default_external = Encoding::UTF_8
 
 class ConverterGui
 
+  def clear
+    ids = @tree.children('').map{|c| c.id}
+    @tree.delete ids
+  end
+
   def convert(yamlfile, month = nil)
+    clear
     data = ReportData.load_yaml_file(yamlfile)
     data.extract_by_month(month || Time.now.month)
                   .fill_all_tasks_hours.table_each do |vals|
