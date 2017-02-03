@@ -33,6 +33,13 @@ class ConverterGui
     end
   end
 
+  def select_file
+    Tk.getOpenFile filetypes: [
+        ["yaml", ".yaml"],
+        ["all", ".*"]],
+      "defaultextension" => ".yaml"
+  end
+
   YAML_FILE = "report.yaml"
 
   COLS = %w(workhour start end)
@@ -43,21 +50,42 @@ class ConverterGui
     @root = TkRoot.new
     @root.title = "Report Converter"
 
-    yamlfile = YAML_FILE
+    @yamlfile = File.join(Dir.pwd, YAML_FILE)
 
-    @clock_label = Tk::Label.new(@root)
-    @clock_label.text = yamlfile
-    @clock_label.pack
+    file_frame = Tk::Frame.new(@root)
+    label = Tk::Label.new(file_frame)
+    label.pack side: :left
+    label.text "File: " + @yamlfile
+    btn = TkButton.new(file_frame) do 
+      text 'Choose'
+      pack side: :left
+    end
+    btn.command = proc do
+      f = select_file
+      @yamlfile = f if f
+    end
+    file_frame.pack anchor: :w
+
+    month_frame = Tk::Frame.new(@root)
+    
+    Tk::Label.new(month_frame) do
+      text "Month"
+      pack side: :left
+    end
     
     @mon = TkVariable.new(Time.now.month.to_s)
-    @mon_entry = Tk::Entry.new
-    @mon_entry.textvariable @mon
-    @mon_entry.pack
+    ent = Tk::Entry.new(month_frame) do 
+      pack side: :left
+    end
+    ent.textvariable @mon
 
-    @button = TkButton.new(@root)
-    @button.text = 'convert'
-    @button.command = proc {convert yamlfile, @mon.value.to_i}
-    @button.pack
+    btn = TkButton.new(month_frame) do
+      text 'Load'
+      pack side: :left
+    end
+    btn.command proc {convert @yamlfile, @mon.value.to_i}
+
+    month_frame.pack anchor: :w
 
     @tree = Ttk::Treeview.new.pack(expand: true, fill: :both)
     @tree.columns = COLS.join(' ')
