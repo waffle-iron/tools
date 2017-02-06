@@ -14,9 +14,13 @@ class ConverterGui
 
   def convert(yamlfile, month = nil)
     clear
-    now = Time.now
+    today = Time.now
+    prevday = (1..6).each do |d|
+      pd = Time.local(today.year, today.month, today.day - d)
+      break pd if (1..5).include?(pd.wday)
+    end
     # 昨日と今日の作業詳細はデフォルトで開いておく
-    openkeys = [now.day - 1, now.day].map{|d| "#{now.month}/#{d}"}
+    openkeys = [prevday, today].map{|d| "#{d.month}/#{d.day}"}
     data = ReportData.load_yaml_file(yamlfile)
     data.extract_by_month(month || Time.now.month)
                   .fill_all_tasks_hours.table_each do |vals|
