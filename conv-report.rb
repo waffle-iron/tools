@@ -46,7 +46,7 @@ module ReportData
     table_each do |vals|
       STDERR.puts vals.first if opts[:verbose]
       output << csv(vals.insert(3, *([''] * 7)))
-      output << "\n"
+      output << "\r\n"
     end
     output
   end
@@ -135,7 +135,7 @@ def main
   end
   
   data = ReportData.load_yaml_file(yamlfile)
-  File.open(csvfile, "w") do |out|
+  File.open(csvfile, "wb") do |out|
     out.print data.extract_by_month(opts[:month] || Time.now.month)
                 .fill_all_tasks_hours.to_csv(opts)
                 .encode(Encoding::CP932)
