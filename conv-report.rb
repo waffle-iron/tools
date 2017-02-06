@@ -96,6 +96,8 @@ module ReportData
     end
     if idx && hours
       tasks[idx] += "(#{hour_to_s(hours - assigned)}h)"
+    elsif hours && hours > assigned
+      tasks << "UNASSIGNED!! (#{hour_to_s(hours - assigned)}h)"
     end
   end
 
