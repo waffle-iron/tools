@@ -21,9 +21,9 @@ class ConverterGui
     end
     # 昨日と今日の作業詳細はデフォルトで開いておく
     openkeys = [prevday, today].map{|d| "#{d.month}/#{d.day}"}
-    data = ReportData.load_yaml_file(yamlfile)
-    data.extract_by_month(month || Time.now.month)
-                  .fill_all_tasks_hours.table_each do |vals|
+    whole_data = ReportData.load_yaml_file(yamlfile)
+    data = whole_data.extract_by_month(month || Time.now.month)
+    data.fill_all_tasks_hours.table_each do |vals|
       date, hours, tasks, stime, etime = *vals
       key = date.to_s
       tasks.split(/\n/).each.with_index do |task, i|
@@ -36,6 +36,8 @@ class ConverterGui
                      value: [task, '', '']
       end
     end
+    @tree.insert nil, :end, id: :total, text: "合計",
+                 value: [data.sum_hours, '', '']
   end
 
   def select_file

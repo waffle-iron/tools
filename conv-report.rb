@@ -18,11 +18,35 @@ module ReportData
   REST_SECS = 3600 # 休憩時間(秒)
   ROUND_UNIT = nil # 15 * 60 # 丸め単位 nil だと丸めない
 
+  class DayData
+    attr_accessor :date, :stime, :etime, :hours, :tasks
+
+    def parse(yaml)
+      @stime = @etime = ""
+      @stime, @etime = yaml["timecard"].split(/-/) if yaml["timecard"]
+      @hours = calc_hours(stime, etime)
+      @tasks = yaml["tasks"]
+      self
+    end
+  
+    def calc_hours(stime, etime)
+      return nil unless /\d?\d:\d?\d/ =~ stime && /\d?\d:\d?\d/ =~ etime
+    
+      # Substruction of Times gives float secs
+      elapsed = Time.parse(etime) - Time.parse(stime) - REST_SECS
+      elapsed = (elapsed / ROUND_UNIT).round * ROUND_UNIT if ROUND_UNIT
+      elapsed / 3600.0
+    end
+
+    def self.from_yaml(yaml)
+      new.parse yaml
+    end
+  end
+
   def fill_all_tasks_hours
     each do |date, vals|
       if vals
-        stime, etime, hours, tasks = parse_day(vals)
-        fill_task_hours tasks, hours
+        fill_task_hours vals.tasks, vals.hours
       end
     end
     self
@@ -31,10 +55,9 @@ module ReportData
   def table_each
     each do |date, vals|
       if vals
-        stime, etime, hours, tasks = parse_day(vals)
         tasks_str = ""
-        tasks_str = tasks.map{|s| "・#{s}"}.join("\n") if tasks
-        yield [date, hour_to_s(hours), tasks_str] + [stime, etime]
+        tasks_str = vals.tasks.map{|s| "・#{s}"}.join("\n") if vals.tasks
+        yield [date, hour_to_s(vals.hours), tasks_str] + [vals.stime, vals.etime]
       else
         yield [date, 0.0, "休日"]
       end
@@ -62,20 +85,26 @@ module ReportData
     result.extend(ReportData)
   end
 
+  def sum_hours
+    map{|k, v| v&.hours || 0.0}.inject(:+)
+  end
+
   module_function
-  def load_yaml_file(filename)
-    YAML.load_file(filename).extend(ReportData)
+  def load_yaml(yaml)
+    data = {}
+    yaml.each do |date, vals|
+      v = DayData.from_yaml(vals)
+      v.date = date
+      data[date] = v
+    end
+    data.extend(ReportData)
+  end
+
+  def load_yaml_file(yamlfile)
+    ReportData.load_yaml(YAML.load_file(yamlfile))
   end
 
   private
-
-  def parse_day(vals)
-    stime = etime = ""
-    stime, etime = vals["timecard"].split(/-/) if vals["timecard"]
-    hours = calc_hours(stime, etime)
-    tasks = vals["tasks"]
-    return stime, etime, hours, tasks
-  end
 
   def hour_to_s(hour)
     hour.nil? ? '' : '%4.2f' % [hour]
@@ -103,15 +132,6 @@ module ReportData
 
   def csv(vals)
     vals.map{|s| %|"#{s}"| }.join(",")
-  end
-  
-  def calc_hours(stime, etime)
-    return nil unless /\d?\d:\d?\d/ =~ stime && /\d?\d:\d?\d/ =~ etime
-  
-    # Substruction of Times gives float secs
-    elapsed = Time.parse(etime) - Time.parse(stime) - REST_SECS
-    elapsed = (elapsed / ROUND_UNIT).round * ROUND_UNIT if ROUND_UNIT
-    elapsed / 3600.0
   end
 end
 
