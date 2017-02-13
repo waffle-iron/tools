@@ -36,8 +36,10 @@ class ConverterGui
                      value: [task, '', '']
       end
     end
+
+    # monthly sum
     @tree.insert nil, :end, id: :total, text: "合計",
-                 value: [data.sum_hours, '', '']
+      value: [data.sum_hours.round(2), '', '']
   end
 
   def select_file
