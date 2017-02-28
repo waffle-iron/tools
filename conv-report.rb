@@ -34,7 +34,7 @@ module ReportData
     
       # Substruction of Times gives float secs
       elapsed = Time.parse(etime) - Time.parse(stime)
-      elapsed -= LUNCH_SECS if Time.parse(stime) > Time.parse("12:30")
+      elapsed -= LUNCH_SECS if Time.parse(stime) < Time.parse("12:30")
       elapsed = (elapsed / ROUND_UNIT).round * ROUND_UNIT if ROUND_UNIT
       elapsed / 3600.0
     end
