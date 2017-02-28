@@ -136,6 +136,18 @@ module ReportData
   end
 end
 
+module ReportConverter
+  module_function
+  def convert_to_csv(yamlfile, csvfile, opts)
+    data = ReportData.load_yaml_file(yamlfile)
+    File.open(csvfile, "wb") do |out|
+      out.print data.extract_by_month(opts[:month] || Time.now.month)
+                  .fill_all_tasks_hours.to_csv(opts)
+                  .encode(Encoding::CP932)
+    end
+  end
+end
+
 
 # めんどいので、ファイル名固定
 YAML_FILE = "report.yaml"
@@ -155,12 +167,7 @@ def main
     op.parse! ARGV
   end
   
-  data = ReportData.load_yaml_file(yamlfile)
-  File.open(csvfile, "wb") do |out|
-    out.print data.extract_by_month(opts[:month] || Time.now.month)
-                .fill_all_tasks_hours.to_csv(opts)
-                .encode(Encoding::CP932)
-  end
+  ReportConverter::convert_to_csv(yamlfile, csvfile, opts)
 end
 
 main if __FILE__ == $0
