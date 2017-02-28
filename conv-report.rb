@@ -167,7 +167,7 @@ def main
     op.parse! ARGV
   end
   
-  ReportConverter::convert_to_csv(yamlfile, csvfile, opts)
+  ReportConverter.convert_to_csv(yamlfile, csvfile, opts)
 end
 
 main if __FILE__ == $0

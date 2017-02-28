@@ -12,7 +12,7 @@ class ConverterGui
     @tree.delete ids
   end
 
-  def convert(yamlfile, month = nil)
+  def load_yaml(yamlfile, month = nil)
     clear
     today = Time.now
     prevday = (1..6).each do |d|
@@ -21,10 +21,12 @@ class ConverterGui
     end
     # 昨日と今日の作業詳細はデフォルトで開いておく
     openkeys = [prevday, today].map{|d| "#{d.month}/#{d.day}"}
-    whole_data = ReportData.load_yaml_file(yamlfile)
-    data = whole_data.extract_by_month(month || Time.now.month)
+
+    data = ReportData.load_yaml_file(yamlfile)
+    data = data.extract_by_month(month || Time.now.month)
     data.fill_all_tasks_hours.table_each do |vals|
       date, hours, tasks, stime, etime = *vals
+      hours ||= 'N/A'
       key = date.to_s
       tasks.split(/\n/).each.with_index do |task, i|
         if i == 0
@@ -35,6 +37,10 @@ class ConverterGui
         @tree.insert key, :end, id: "#{key}-#{i}", text: '',
                      value: [task, '', '']
       end
+    end
+
+    def convert(yamlfile, csvfile, month)
+      ReportConverter.convert_to_csv yamlfile, csvfile, month: month
     end
 
     # monthly sum
@@ -50,10 +56,12 @@ class ConverterGui
   end
 
   YAML_FILE = "report.yaml"
+  CSV_FILE = "report_out.csv"
 
   COLS = %w(workhour start end)
   NAMES = %w(作業時間 開始 終了)
   WIDTHS = [300, 60, 60]
+
 
   def main
     @root = TkRoot.new
@@ -92,7 +100,19 @@ class ConverterGui
       text 'Load'
       pack side: :left
     end
-    btn.command proc {convert @yamlfile, @mon.value.to_i}
+    btn.command do
+      load_yaml @yamlfile, @mon.value.to_i
+    end
+
+    btn = TkButton.new(month_frame) do
+      text 'to CSV'
+      pack side: :left
+    end
+    btn.command do
+      convert @yamlfile, CSV_FILE, @mon.value.to_i
+      # Open csv with excel on windows
+      system "start #{CSV_FILE}" if ENV['OS'] == 'Windows_NT'
+    end
 
     month_frame.pack anchor: :w
 
