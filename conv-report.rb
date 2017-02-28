@@ -15,7 +15,7 @@ require 'yaml'
 require 'time'
 
 module ReportData
-  REST_SECS = 3600 # 休憩時間(秒)
+  LUNCH_SECS = 3600 # 昼休み時間(秒)
   ROUND_UNIT = nil # 15 * 60 # 丸め単位 nil だと丸めない
 
   class DayData
@@ -33,7 +33,8 @@ module ReportData
       return nil unless /\d?\d:\d?\d/ =~ stime && /\d?\d:\d?\d/ =~ etime
     
       # Substruction of Times gives float secs
-      elapsed = Time.parse(etime) - Time.parse(stime) - REST_SECS
+      elapsed = Time.parse(etime) - Time.parse(stime)
+      elapsed -= LUNCH_SECS if Time.parse(stime) > Time.parse("12:30")
       elapsed = (elapsed / ROUND_UNIT).round * ROUND_UNIT if ROUND_UNIT
       elapsed / 3600.0
     end
