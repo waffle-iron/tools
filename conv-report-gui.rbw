@@ -28,9 +28,10 @@ class ConverterGui
       date, hours, tasks, stime, etime = *vals
       hours ||= 'N/A'
       key = date.to_s
+      keytext = Time.parse(date).strftime("%m/%d (%a)")
       tasks.split(/\n/).each.with_index do |task, i|
         if i == 0
-          @tree.insert nil, :end, id: key, text: key,
+          @tree.insert nil, :end, id: key, text: keytext,
                        value: [hours, stime, etime]
           @tree.itemconfigure(key, :open, true) if openkeys.include?(key)
         end
