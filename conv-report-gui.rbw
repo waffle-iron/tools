@@ -41,13 +41,13 @@ class ConverterGui
       end
     end
 
-    def convert(yamlfile, csvfile, month)
-      ReportConverter.convert_to_csv yamlfile, csvfile, month: month
-    end
-
     # monthly sum
     @tree.insert nil, :end, id: :total, text: "合計",
       value: [data.sum_hours.round(2), '', '']
+  end
+
+  def convert(yamlfile, csvfile, month)
+    ReportConverter.convert_to_csv yamlfile, csvfile, month: month
   end
 
   def select_file
