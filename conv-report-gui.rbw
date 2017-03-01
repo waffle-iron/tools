@@ -1,5 +1,6 @@
 #!/usr/bin/ruby
 
+require 'date'
 require 'tk'
 require_relative 'conv-report'
 
@@ -16,7 +17,7 @@ class ConverterGui
     clear
     today = Time.now
     prevday = (1..6).each do |d|
-      pd = Time.local(today.year, today.month, today.day - d)
+      pd = (Date.today - d).to_time
       break pd if (1..5).include?(pd.wday)
     end
     # 昨日と今日の作業詳細はデフォルトで開いておく
