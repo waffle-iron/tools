@@ -112,8 +112,12 @@ class ConverterGui
     end
     btn.command do
       convert @yamlfile, CSV_FILE, @mon.value.to_i
-      # Open csv with excel on windows
-      system "start #{CSV_FILE}" if ENV['OS'] == 'Windows_NT'
+      ans = Tk.messageBox(type: :yesno, title: "Convert to CSV",
+        message: "Conversion completed.\nOpen CSV file?")
+      if ans == "yes"
+        # Open csv with excel on windows
+        system "start #{CSV_FILE}" if ENV['OS'] == 'Windows_NT'
+      end
     end
 
     month_frame.pack anchor: :w
