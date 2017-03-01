@@ -8,13 +8,13 @@ Encoding.default_external = Encoding::UTF_8
 
 class ConverterGui
 
-  def clear
+  def clear_table
     ids = @tree.children('').map{|c| c.id}
     @tree.delete ids
   end
 
   def load_yaml(yamlfile, month = nil)
-    clear
+    clear_table
     today = Time.now
     prevday = (1..6).each do |d|
       pd = (Date.today - d).to_time
@@ -64,13 +64,13 @@ class ConverterGui
   NAMES = %w(作業時間 開始 終了)
   WIDTHS = [300, 60, 60]
 
-
   def main
     @root = TkRoot.new
     @root.title = "Report Converter"
 
     @yamlfile = File.join(Dir.pwd, YAML_FILE)
 
+    # FILE FRAME
     file_frame = Tk::Frame.new(@root)
     label = Tk::Label.new(file_frame)
     label.pack side: :left
@@ -83,30 +83,60 @@ class ConverterGui
       f = select_file
       @yamlfile = f if f
     end
-    file_frame.pack anchor: :w
+    file_frame.pack anchor: :w, pady: 2
 
+    # MONTH FRAME
     month_frame = Tk::Frame.new(@root)
     
     Tk::Label.new(month_frame) do
-      text "Month"
+      text "Month: "
       pack side: :left
     end
-    
+
     @mon = TkVariable.new(Time.now.month.to_s)
     ent = Tk::Entry.new(month_frame) do 
+      width 4
       pack side: :left
     end
     ent.textvariable @mon
 
+    btn = TkButton.new(month_frame) do 
+      text "▼"
+      pack side: :left
+    end
+    btn.command do
+      @mon.value = @mon.value.to_i - 1
+      load_yaml @yamlfile, @mon.value.to_i
+    end
+    
+    btn = TkButton.new(month_frame) do 
+      text "▲"
+      pack side: :left
+    end
+    btn.command do
+      @mon.value = @mon.value.to_i + 1
+      load_yaml @yamlfile, @mon.value.to_i
+    end
+
     btn = TkButton.new(month_frame) do
       text 'Load'
-      pack side: :left
+      pack side: :left, padx: 20
     end
     btn.command do
       load_yaml @yamlfile, @mon.value.to_i
     end
 
-    btn = TkButton.new(month_frame) do
+    month_frame.pack anchor: :w, pady: 2
+
+    # COMMAND FRAME
+    command_frame = Tk::Frame.new(@root)
+
+    Tk::Label.new(command_frame) do
+      pack side: :left
+      text "Convert: "
+    end
+
+    btn = TkButton.new(command_frame) do
       text 'to CSV'
       pack side: :left
     end
@@ -120,8 +150,16 @@ class ConverterGui
       end
     end
 
-    month_frame.pack anchor: :w
+    btn = TkButton.new(command_frame) do
+      text 'to RJB'
+      pack side: :left
+    end
+    btn.command do
+    end
 
+    command_frame.pack anchor: :w, pady: 2
+
+    # DATA TREE VIEW
     @tree = Ttk::Treeview.new.pack(expand: true, fill: :both)
     @tree.columns = COLS.join(' ')
     COLS.zip(NAMES, WIDTHS).each do |col, name, width|
