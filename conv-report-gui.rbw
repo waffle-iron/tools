@@ -155,6 +155,12 @@ class ConverterGui
       pack side: :left
     end
     btn.command do
+      data = ReportData.load_yaml_file(@yamlfile)
+      data = data.extract_by_month(@mon.value.to_i || Time.now.month)
+      data.table_each do |vals|
+        date, hours, tasks, stime, etime = *vals
+        puts [date, stime, etime].join(",").gsub(/:/, ',')
+      end
     end
 
     command_frame.pack anchor: :w, pady: 2
