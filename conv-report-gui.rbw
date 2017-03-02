@@ -166,12 +166,22 @@ class ConverterGui
     command_frame.pack anchor: :w, pady: 2
 
     # DATA TREE VIEW
-    @tree = Ttk::Treeview.new.pack(expand: true, fill: :both)
+    treeframe = Tk::Frame.new(@root)
+    scbar = TkYScrollbar.new(treeframe)
+    scbar.pack side: :right, fill: :both
+
+    @tree = Ttk::Treeview.new(treeframe, yscrollcommand: proc{|*args| scbar.set(*args)})
+    @tree.pack(expand: true, fill: :both)
     @tree.columns = COLS[1..-1].join(' ')
     COLS.zip(NAMES, WIDTHS).each do |col, name, width|
       @tree.heading_configure col, text: name
       @tree.column_configure col, width: width
     end
+    scbar.command do |*args|
+      @tree.yview(*args)
+    end
+
+    treeframe.pack expand: true, fill: :both
 
     Tk.mainloop
 
