@@ -60,9 +60,9 @@ class ConverterGui
   YAML_FILE = "report.yaml"
   CSV_FILE = "report_out.csv"
 
-  COLS = %w(workhour start end)
-  NAMES = %w(作業時間 開始 終了)
-  WIDTHS = [300, 60, 60]
+  COLS = %w(#0 workhour start end)
+  NAMES = %w(月日 作業時間 開始 終了)
+  WIDTHS = [120, 300, 60, 60]
 
   def main
     @root = TkRoot.new
@@ -167,7 +167,7 @@ class ConverterGui
 
     # DATA TREE VIEW
     @tree = Ttk::Treeview.new.pack(expand: true, fill: :both)
-    @tree.columns = COLS.join(' ')
+    @tree.columns = COLS[1..-1].join(' ')
     COLS.zip(NAMES, WIDTHS).each do |col, name, width|
       @tree.heading_configure col, text: name
       @tree.column_configure col, width: width
