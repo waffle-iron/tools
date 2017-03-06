@@ -3,6 +3,7 @@
 require 'date'
 require 'tk'
 require_relative 'conv-report'
+require_relative 'filesel'
 
 Encoding.default_external = Encoding::UTF_8
 
@@ -75,19 +76,11 @@ class ConverterGui
     @yamlfile = File.join(Dir.pwd, YAML_FILE)
 
     # FILE FRAME
-    file_frame = Tk::Frame.new(@root)
-    label = Tk::Label.new(file_frame)
-    label.pack side: :left
-    label.text "File: " + @yamlfile
-    btn = TkButton.new(file_frame) do 
-      text 'Choose'
-      pack side: :left
+    @filesel = FileSelector.new(@root, "yaml", @yamlfile) do
+      @yamlfile = @filesel.filepath
+      load_yaml @yamlfile, @mon.value.to_i
     end
-    btn.command = proc do
-      f = select_file
-      @yamlfile = f if f
-    end
-    file_frame.pack anchor: :w, pady: 2
+    @filesel.pack anchor: :w, pady: 2
 
     # MONTH FRAME
     month_frame = Tk::Frame.new(@root)
