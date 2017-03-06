@@ -188,6 +188,10 @@ class ConverterGui
   end
 end
 
-ConverterGui.new.main
+begin
+  ConverterGui.new.main
+rescue => e
+  Tk.messageBox title: "#{File.basename($0)}: error" , message: e.to_s
+end
 
 # vim:set ft=ruby ts=2 sw=2 et:
