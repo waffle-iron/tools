@@ -65,15 +65,18 @@ class ConverterGui
   YAML_FILE = "report.yaml"
   CSV_FILE = "report_out.csv"
 
-  COLS = %w(#0 workhour start end)
-  NAMES = %w(月日 作業時間 開始 終了)
-  WIDTHS = [120, 300, 60, 60]
+  TREEVIEW_COLUMNS = [
+    {col: "#0",       text: "月日",     width: 120},
+    {col: "workhour", text: "作業時間", width: 300},
+    {col: "start",    text: "開始",     width:  60},
+    {col: "end",      text: "終了",     width:  60},
+  ]
 
-  def main
-    @root = TkRoot.new
-    @root.title = "Report Converter"
-
-    @yamlfile = File.join(Dir.pwd, YAML_FILE)
+  def build_gui
+    @root = TkRoot.new do
+      title = "Report Converter"
+      geometry "600x400"
+    end
 
     # FILE FRAME
     @filesel = FileSelector.new(@root, "yaml", @yamlfile) do
@@ -169,19 +172,23 @@ class ConverterGui
 
     @tree = Ttk::Treeview.new(treeframe, yscrollcommand: proc{|*args| scbar.set(*args)})
     @tree.pack(expand: true, fill: :both)
-    @tree.columns = COLS[1..-1].join(' ')
-    COLS.zip(NAMES, WIDTHS).each do |col, name, width|
-      @tree.heading_configure col, text: name
-      @tree.column_configure col, width: width
+    @tree.columns = TREEVIEW_COLUMNS.map{|c| c[:col]}.grep_v(/^#0$/).join(' ')
+    TREEVIEW_COLUMNS.each do |c|
+      @tree.heading_configure c[:col], text: c[:text]
+      @tree.column_configure c[:col], width: c[:width]
     end
     scbar.command do |*args|
       @tree.yview(*args)
     end
 
     treeframe.pack expand: true, fill: :both
+  end
+
+  def main
+    @yamlfile = File.join(Dir.pwd, YAML_FILE)
+    build_gui
 
     Tk.mainloop
-
   end
 end
 
