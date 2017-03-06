@@ -22,11 +22,18 @@ module ReportData
     attr_accessor :date, :stime, :etime, :hours, :tasks
 
     def parse(yaml)
-      @stime = @etime = ""
-      @stime, @etime = yaml["timecard"].split(/-/) if yaml["timecard"]
-      @hours = calc_hours(stime, etime)
+      @stime, @etime, @hours = parse_timecard(yaml["timecard"])
       @tasks = yaml["tasks"]
       self
+    end
+
+    def parse_timecard(timecard)
+      if timecard.is_a?(String)
+        stime, etime = timecard.split(/-/)
+        hours = calc_hours(stime, etime)
+        return stime, etime, hours
+      end
+      return "", "", nil
     end
   
     def calc_hours(stime, etime)
