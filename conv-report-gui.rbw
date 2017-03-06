@@ -44,6 +44,10 @@ class ConverterGui
     # monthly sum
     @tree.insert nil, :end, id: :total, text: "合計",
       value: [data.sum_hours.round(2), '', '']
+
+    # show around today
+    @tree.see openkeys[0] if @tree.exist?(openkeys[0])
+    @tree.selection_add openkeys[1] if @tree.exist?(openkeys[1])
   end
 
   def convert(yamlfile, csvfile, month)
