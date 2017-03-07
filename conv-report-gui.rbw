@@ -7,7 +7,7 @@ require_relative 'filesel'
 
 Encoding.default_external = Encoding::UTF_8
 
-class ConverterGui
+class ReportToolGui
 
   def clear_table
     ids = @tree.children('').map{|c| c.id}
@@ -51,6 +51,10 @@ class ConverterGui
     @tree.selection_add openkeys[1] if @tree.exist?(openkeys[1])
   end
 
+  def reload
+    load_yaml @yamlfile, @mon.value.to_i
+  end
+
   def convert(yamlfile, csvfile, month)
     ReportConverter.convert_to_csv yamlfile, csvfile, month: month
   end
@@ -74,14 +78,14 @@ class ConverterGui
 
   def build_gui
     @root = TkRoot.new do
-      title = "Report Converter"
+      title = "Report Tool"
       geometry "600x400"
     end
 
     # FILE FRAME
     @filesel = FileSelector.new(@root, "yaml", @yamlfile) do
       @yamlfile = @filesel.filepath
-      load_yaml @yamlfile, @mon.value.to_i
+      reload
     end
     @filesel.pack anchor: :w, pady: 2
 
@@ -106,7 +110,7 @@ class ConverterGui
     end
     btn.command do
       @mon.value = @mon.value.to_i - 1
-      load_yaml @yamlfile, @mon.value.to_i
+      reload
     end
     
     btn = TkButton.new(month_frame) do 
@@ -115,15 +119,15 @@ class ConverterGui
     end
     btn.command do
       @mon.value = @mon.value.to_i + 1
-      load_yaml @yamlfile, @mon.value.to_i
+      reload
     end
 
     btn = TkButton.new(month_frame) do
-      text 'Load'
+      text 'Reload'
       pack side: :left, padx: 20
     end
     btn.command do
-      load_yaml @yamlfile, @mon.value.to_i
+      reload
     end
 
     month_frame.pack anchor: :w, pady: 2
@@ -187,13 +191,14 @@ class ConverterGui
   def main
     @yamlfile = File.join(Dir.pwd, YAML_FILE)
     build_gui
+    reload
 
     Tk.mainloop
   end
 end
 
 begin
-  ConverterGui.new.main
+  ReportToolGui.new.main
 rescue => e
   Tk.messageBox title: "#{File.basename($0)}: error" , message: e.to_s
 end
