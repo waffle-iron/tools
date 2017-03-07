@@ -24,6 +24,7 @@ module ReportData
     def parse(yaml)
       @stime, @etime, @hours = parse_timecard(yaml["timecard"])
       @tasks = yaml["tasks"]
+      @tasks = [] unless @tasks.is_a?(Array)
       self
     end
 
